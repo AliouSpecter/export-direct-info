@@ -1,0 +1,4 @@
+.env
+.env.*.local
+becu5411_wp687.sql
+wp-content.tar
