@@ -1,0 +1,6 @@
+{
+  "name": "Brief_EDI",
+  "note": "Export complet du workflow n8n Brief_EDI (id o5tsXNCUXy65mmQb) au 2026-05-01, avant migration vers le pilotage Notion. Contient nodes + connections d'origine (Telegram, Perplexity, Claude, Gemini images, agents de rédaction). Les credentials listées sont des références d'ID internes n8n, pas des valeurs secrètes.",
+  "active": false,
+  "id": "o5tsXNCUXy65mmQb"
+}
