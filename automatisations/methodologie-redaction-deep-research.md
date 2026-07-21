@@ -1,6 +1,6 @@
 # Méthodologie de rédaction "Deep Research" — Export Direct Info
 
-_Distillée de tests manuels validés (juillet 2026) sur les sujets HACCP puis Karité._
+_Distillée de tests manuels validés (juillet 2026) sur les sujets HACCP puis Karité, affinée après premier passage réel de la routine (Réglementation UE 2026)._
 
 ---
 
@@ -26,13 +26,13 @@ Pour les sources les plus riches, lire la page complète (pas seulement le résu
 
 ## Structure attendue (calibrée sur les articles déjà publiés)
 
-- **Ancres internes** : chaque section H2 a un `id="sectionN"`, l'introduction annonce le plan sous forme de liens vers ces ancres.
+- **Ancres internes — format obligatoire** : chaque section H2 a un `id="sectionN"`. L'introduction annonce le plan sous forme d'une **liste à puces `<ul><li>`**, une puce par section, chaque puce étant un lien `<a href="#sectionN">`. PAS de liens en prose inline dans un paragraphe (ex: "on verra X, Y et Z") — toujours une vraie liste HTML, comme dans https://exportdirectinfo.com/financer-la-production-sans-credit-bancaire-classique/.
 - **Tableaux** : denses, avec des chiffres réels et nommés (pas de fourchettes vagues quand une donnée précise existe). Un tableau par section quand pertinent. Si une donnée est introuvable, écrire "Non communiqué précisément" plutôt que d'inventer.
-- **Citations / sources** : lien direct sur le mot-clé ou le chiffre quand la source est fiable et l'URL fonctionnelle. Sinon, citation entre parenthèses en fin de phrase : `(Organisation, nom du document, année)`. Jamais de chiffre sans source.
+- **Citations / sources — priorité de lien** : quand une affirmation est sourcée, lier en priorité (1) la page/l'article/le rapport précis qui contient l'information ; si introuvable, (2) la sous-page ou catégorie du site source la plus proche du sujet ; si introuvable, (3) la page d'accueil du site source. Ne faire ce lien que si le site source a une autorité de domaine probable (institution officielle, média spécialisé reconnu, organisme international, grande entreprise établie) — l'objectif est de renforcer le SEO/GEO de l'article, pas de lier vers n'importe quel site trouvé en recherche. Si aucune source fiable n'a de lien exploitable, citation entre parenthèses en fin de phrase : `(Organisation, nom du document, année)`. Jamais de chiffre sans source.
 - **Points clés à retenir** : encadré après les sections les plus denses en données, format `**Titre court** – description` en liste à puces (voir l'exemple réel : https://exportdirectinfo.com/financer-la-production-sans-credit-bancaire-classique/).
 - **FAQ finale** : format `<details><summary>Question</summary><p>Réponse autonome</p></details>`. Aucun lien dans la FAQ.
 - **Liens internes** : vers 2-3 articles déjà publiés sur exportdirectinfo.com, intégrés dans une phrase de contexte (pas une liste "à lire aussi" brute).
-- **Ton et forme** : phrases courtes, paragraphes de 4-5 lignes, vocabulaire simple (compréhensible par un agriculteur), texte justifié sauf titres et en-têtes de tableau (alignés à gauche).
+- **Ton et forme** : phrases courtes, paragraphes **de 5 lignes maximum** avec des retours à la ligne fréquents (mieux vaut trop découper que pas assez), vocabulaire simple (compréhensible par un agriculteur), texte justifié sauf titres et en-têtes de tableau (alignés à gauche).
 - **Longueur** : pas de plafond artificiel — prioriser la densité d'information même si ça dépasse 2000 mots. Les articles de référence font 3500-4500 mots.
 
 ---
@@ -59,4 +59,10 @@ Projet d'articles → Brief → Brief validé → [validation humaine manuelle] 
    → [routine de rédaction] → Article validé → [validation humaine manuelle] → Publication → Archivé
 ```
 
-La routine de rédaction se déclenche sur état = **"Rédaction"** et se termine en écrivant l'article + en passant l'état à **"Article validé"**. Elle ne touche pas aux images (déjà générées par `Brief_EDI`) ni au plan de recherche déjà présent dans la page.
+La routine de rédaction se déclenche sur état = **"Rédaction"** et se termine en :
+1. Créant un brouillon WordPress (API REST, compte `bot-redaction`)
+2. Écrivant le lien du brouillon dans la propriété Notion **"Résumé"** (visible en haut de la carte)
+3. Écrivant l'article complet dans le corps de la page (blocs `code`, comme sauvegarde/trace)
+4. Passant l'état à **"Article validé"**
+
+Elle ne touche pas aux images (déjà générées par `Brief_EDI`) ni au plan de recherche déjà présent dans la page.
