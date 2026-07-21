@@ -22,6 +22,8 @@ Pour les sources les plus riches, lire la page complète (pas seulement le résu
 
 **Vigilance obligatoire** : toujours vérifier le pays/l'entité exacte d'un exemple avant de le citer. Une confusion pays a été détectée et corrigée pendant les tests (une usine citée comme référence Burkina Faso était en réalité en Côte d'Ivoire) — sourcer systématiquement évite ce type d'erreur.
 
+**Citations et témoignages** : si la recherche fait remonter une citation ou un témoignage pertinent (dirigeant, expert, responsable d'organisme), l'intégrer dans l'article — ça renforce la crédibilité et l'ancrage terrain. Attribuer normalement (nom, fonction, source) sans mise en avant particulière du type de source.
+
 ---
 
 ## Structure attendue (calibrée sur les articles déjà publiés)
