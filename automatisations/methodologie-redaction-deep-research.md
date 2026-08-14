@@ -1,6 +1,6 @@
 # Méthodologie de rédaction "Deep Research" — Export Direct Info
 
-_Distillée de tests manuels validés (juillet 2026) sur les sujets HACCP puis Karité, affinée après premier passage réel de la routine (Réglementation UE 2026)._
+_Distillée de tests manuels validés (juillet 2026) sur les sujets HACCP puis Karité, affinée après plusieurs passages réels de la routine._
 
 ---
 
@@ -54,17 +54,25 @@ L'ancien script `ops/n8n_create_redaction.py` tronquait l'article à 2000 caract
 
 ---
 
+## Architecture : rédaction (routine) et publication WordPress (n8n) sont séparées
+
+**Découverte (août 2026)** : l'environnement cloud où tourne la routine de rédaction bloque les connexions réseau sortantes vers des domaines externes (dont `exportdirectinfo.com`) — seul le connecteur Notion (infra Anthropic) passe. La routine ne peut donc pas créer le brouillon WordPress elle-même.
+
+**Découpage des responsabilités :**
+- **Routine "EDI — Rédaction Deep Research"** : recherche + rédaction, puis écrit dans le corps de la page Notion, dans cet ordre :
+  1. Un bloc `code` (langage `json`) : `{"titre_wp": "...", "categorie_wp": <id>, "image_couverture_id": <id ou null>}`
+  2. Le HTML complet de l'article, découpé en blocs `code` (langage `html`, ≤1900 caractères chacun)
+  3. Passe l'État à `Article validé`
+  
+  Elle ne touche jamais à la propriété `Résumé` et n'appelle jamais l'API WordPress.
+
+- **Workflow n8n `Publier_EDI`** (actif, poll toutes les 3h) : cherche les pages `Article validé` dont `Résumé` est encore vide, lit les blocs Notion, reconstruit le JSON + le HTML, crée le brouillon WordPress (catégorie + image à la une), puis écrit le lien du brouillon dans `Résumé` — c'est ce remplissage qui marque la page comme traitée (empêche un retraitement).
+
 ## Chaîne de statuts Notion (base "Article EDI")
 
 ```
 Projet d'articles → Brief → Brief validé → [validation humaine manuelle] → Rédaction
-   → [routine de rédaction] → Article validé → [validation humaine manuelle] → Publication → Archivé
+   → [routine de rédaction] → Article validé → [Publier_EDI, automatique] → [validation humaine manuelle] → Publication → Archivé
 ```
 
-La routine de rédaction se déclenche sur état = **"Rédaction"** et se termine en :
-1. Créant un brouillon WordPress (API REST, compte `bot-redaction`)
-2. Écrivant le lien du brouillon dans la propriété Notion **"Résumé"** (visible en haut de la carte)
-3. Écrivant l'article complet dans le corps de la page (blocs `code`, comme sauvegarde/trace)
-4. Passant l'état à **"Article validé"**
-
-Elle ne touche pas aux images (déjà générées par `Brief_EDI`) ni au plan de recherche déjà présent dans la page.
+`Brief_EDI` (n8n) ne touche pas non plus à Notion pour les images : depuis août 2026, il les upload directement dans la médiathèque WordPress et n'écrit que les ID/liens en texte dans la page (voir `Brief_EDI` dans n8n).
