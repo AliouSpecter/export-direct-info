@@ -35,6 +35,7 @@ Pour les sources les plus riches, lire la page complète (pas seulement le résu
 - **FAQ finale** : format `<details><summary>Question</summary><p>Réponse autonome</p></details>`. Aucun lien dans la FAQ.
 - **Liens internes** : vers 2-3 articles déjà publiés sur exportdirectinfo.com, intégrés dans une phrase de contexte (pas une liste "à lire aussi" brute).
 - **Liens sortants — règle obligatoire** : TOUT lien `<a href="...">` qui fait quitter la page courante (sources externes, liens vers d'autres articles du site) doit avoir `target="_blank" rel="noopener"` pour s'ouvrir dans un nouvel onglet et ne jamais écraser la page en cours. Seuls les liens d'ancre internes (`href="#sectionN"`, saut dans la même page) restent sans `target`.
+- **Ponctuation — pas de tiret cadratin** : ne jamais utiliser le caractère `—` (tiret cadratin / em dash) dans le texte de l'article, ni dans les titres. Reformuler avec une virgule, un point, ou deux phrases séparées à la place. Un article publié en contenait, ils ont été retirés a posteriori (août 2026) — ne pas reproduire.
 - **Ton et forme** : phrases courtes, paragraphes **de 5 lignes maximum** avec des retours à la ligne fréquents (mieux vaut trop découper que pas assez), vocabulaire simple (compréhensible par un agriculteur), texte justifié sauf titres et en-têtes de tableau (alignés à gauche).
 - **Longueur** : pas de plafond artificiel — prioriser la densité d'information même si ça dépasse 2000 mots. Les articles de référence font 3500-4500 mots.
 
@@ -77,3 +78,9 @@ Projet d'articles → Brief → Brief validé → [validation humaine manuelle] 
 ```
 
 `Brief_EDI` (n8n) ne touche pas non plus à Notion pour les images : depuis août 2026, il les upload directement dans la médiathèque WordPress et n'écrit que les ID/liens en texte dans la page (voir `Brief_EDI` dans n8n).
+
+---
+
+## Compte auteur WordPress
+
+Les articles créés par le pipeline sont publiés sous le compte `bot-redaction` (nom d'affichage : **Aliou BA**, changé en août 2026 pour ne pas afficher un nom de bot sur le site). Ne pas confondre avec le compte administrateur principal (`Aliou90b@`), qui a créé quelques articles antérieurs à l'existence de `bot-redaction` — ces articles-là nécessitent les identifiants admin pour être modifiés (édition impossible avec `bot-redaction`, qui n'a pas les droits sur les contenus d'un autre auteur).
