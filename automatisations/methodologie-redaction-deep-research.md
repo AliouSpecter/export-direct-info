@@ -17,6 +17,7 @@ Un seul appel de recherche (une requête large, un seul prompt) produit systéma
 - Financements et incitations disponibles
 - Logistique / accès marché
 - Acheteurs / partenariats commerciaux connus
+- Citations à sourcer : rechercher spécifiquement des déclarations ou témoignages exploitables (dirigeant, expert, responsable d'organisme, producteur) — souvent trouvables dans la presse locale en ligne et sur les réseaux sociaux, pas seulement dans les rapports institutionnels
 
 Pour les sources les plus riches, lire la page complète (pas seulement le résumé de recherche) avant de rédiger — ça évite de perdre les chiffres précis noyés dans un résumé.
 
