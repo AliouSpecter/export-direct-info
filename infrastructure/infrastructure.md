@@ -57,7 +57,7 @@ _Mis à jour : 2026-08-15_
 
 # Pipeline de production de contenu automatisé
 
-Construit en plusieurs sessions à partir de juillet 2026. Objectif : produire des articles calibrés sur la qualité "Deep Research" (recherche multi-passes, tableaux et chiffres sourcés, structure SEO+GEO) de façon automatisée, avec validation humaine à des points de contrôle précis, du choix du sujet jusqu'à la publication et sa traduction.
+Construit en plusieurs sessions à partir de juillet 2026. Objectif : produire des articles calibrés sur la qualité "Deep Research" (recherche multi-passes, tableaux et chiffres sourcés, structure SEO+GEO) de façon automatisée, avec validation humaine à des points de contrôle précis, du choix du sujet jusqu'à la publication FR. La traduction EN, elle, se publie désormais automatiquement.
 
 ## Vue d'ensemble
 
@@ -91,7 +91,7 @@ Construit en plusieurs sessions à partir de juillet 2026. Objectif : produire d
         │  Écrit le lien du brouillon dans "Résumé" (visible en haut de la carte)
         ▼
  Notion : "Résumé" = lien vers le brouillon WordPress
-        │  ← VALIDATION HUMAINE FINALE : tu relis sur WordPress, tu publies
+        │  ← VALIDATION HUMAINE FINALE (FR) : tu relis sur WordPress, tu publies
         ▼
  Article FR publié
         │
@@ -100,15 +100,14 @@ Construit en plusieurs sessions à partir de juillet 2026. Objectif : produire d
         │  Traduit via Claude, réutilise la catégorie EN équivalente,
         │  localise les liens internes vers leurs équivalents EN
         │  (voir mu-plugin edi-translation-api.php)
-        │  Crée le brouillon EN, le lie au FR via Polylang, copie l'image à la une
+        │  Crée directement l'article EN en `publish` (plus de brouillon
+        │  ni de relecture manuelle sur ce point, décision du 2026-08-15)
+        │  Lie au FR via Polylang, copie l'image à la une
         ▼
- Brouillon EN prêt
-        │  ← VALIDATION HUMAINE : tu publies la version EN
-        ▼
- Article EN publié
+ Article EN publié automatiquement
 ```
 
-Deux points de validation humaine sur le contenu (Brief validé → Rédaction, Article validé → Publication) + un troisième optionnel côté traduction (publier ou non la version EN). Le reste tourne seul.
+Deux points de validation humaine sur le contenu FR (Brief validé → Rédaction, Article validé → Publication). La traduction EN se publie seule, sans étape manuelle, puisque le contenu source (FR) a déjà été validé par un humain.
 
 ---
 
@@ -230,6 +229,7 @@ Identifiants stockés dans `.env` local (`WP_BOT_USER`, `WP_BOT_APP_PASSWORD`, `
 | Fréquence | Toutes les heures (`0 * * * *`) |
 | Modèle | `claude-sonnet-4-6`, max_tokens 32000 |
 | Statut | Actif |
+| Publication | **Automatique** (`status: publish`) depuis le 2026-08-15 — plus de relecture manuelle sur la version EN, le contenu FR source a déjà été validé par un humain avant traduction |
 
 **Flux** :
 1. `GET /wp-json/edi/v1/pending-translations?limit=1` — priorité pages, puis articles FR publiés sans traduction EN
@@ -237,10 +237,8 @@ Identifiants stockés dans `.env` local (`WP_BOT_USER`, `WP_BOT_APP_PASSWORD`, `
 3. Claude traduit (system prompt strict : sentence case, expressions interdites qui trahissent une traduction machine, préserve tout le HTML/tableaux/images tel quel)
 4. **Mapping catégorie FR → EN** (ajouté août 2026, nœud "Extraire traduction") : table fixe `{4:45, 6:48, 19:51, 2:54, 5:57}`, appliquée uniquement pour le post_type `post` (les pages n'ont pas de catégories)
 5. **`POST /wp-json/edi/v1/localize-links`** (ajouté août 2026) : réécrit les liens internes du contenu traduit vers leur équivalent EN quand une traduction publiée existe (sinon laisse le lien FR, jamais de lien cassé)
-6. `POST /wp/v2/posts` — crée le brouillon EN, avec la bonne catégorie et le contenu aux liens localisés
+6. `POST /wp/v2/posts` — crée l'article EN **directement en `publish`**, avec la bonne catégorie et le contenu aux liens localisés
 7. `POST /wp-json/edi/v1/link-translations` — lie FR↔EN dans Polylang, copie l'image à la une FR → EN si l'EN n'en a pas déjà une
-
-Le brouillon EN reste en `draft` — publication manuelle, comme côté FR.
 
 ---
 
@@ -269,7 +267,7 @@ Fichier : `/var/www/html/wp-content/mu-plugins/edi-translation-api.php` (charge 
 
 ## Ce qui reste manuel / non construit
 
-- Publication finale (FR et EN) : toujours un clic manuel dans WP Admin, par choix.
+- Publication finale **FR** : toujours un clic manuel dans WP Admin, par choix (la publication EN, elle, est automatique depuis le 2026-08-15).
 - Distribution réseaux sociaux (LinkedIn, Instagram, X, Facebook, Brevo) : mise de côté pour l'instant, à construire après stabilisation complète du pipeline de contenu.
 
 ---
