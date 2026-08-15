@@ -97,8 +97,9 @@ Construit en plusieurs sessions à partir de juillet 2026. Objectif : produire d
         │
         ▼
 [Traduction automatique FR→EN]  (n8n, toutes les heures)
-        │  Traduit via Claude, localise les liens internes vers leurs
-        │  équivalents EN (voir mu-plugin edi-translation-api.php)
+        │  Traduit via Claude, réutilise la catégorie EN équivalente,
+        │  localise les liens internes vers leurs équivalents EN
+        │  (voir mu-plugin edi-translation-api.php)
         │  Crée le brouillon EN, le lie au FR via Polylang, copie l'image à la une
         ▼
  Brouillon EN prêt
@@ -193,7 +194,17 @@ Détail complet de la méthode : voir `automatisations/methodologie-redaction-de
 
 ## 6. Catégories WordPress
 
-Voir `ops/wp-ids.md` pour les IDs exacts et la règle de correspondance sujet → catégorie. Catégories réelles du site (différentes des 6 prévues à l'origine dans `contenu/strategie.md`) : Agroalimentaire (4), Certifications (6), Financements (19), Logistique & Douanes (2), Opportunités d'export (5).
+Voir `ops/wp-ids.md` pour les IDs exacts et la règle de correspondance sujet → catégorie. Catégories réelles du site (différentes des 6 prévues à l'origine dans `contenu/strategie.md`) :
+
+| Catégorie FR | ID FR | Catégorie EN | ID EN |
+|---|---|---|---|
+| Agroalimentaire | 4 | Agri-food | 45 |
+| Certifications | 6 | Certifications | 48 |
+| Financements | 19 | Financing | 51 |
+| Logistique & Douanes | 2 | Logistics & Customs | 54 |
+| Opportunités d'export | 5 | Export Opportunities | 57 |
+
+Cette table FR↔EN est aussi codée en dur dans le workflow de traduction (nœud "Extraire traduction") pour assigner automatiquement la bonne catégorie EN — voir section 8.
 
 ---
 
@@ -222,11 +233,12 @@ Identifiants stockés dans `.env` local (`WP_BOT_USER`, `WP_BOT_APP_PASSWORD`, `
 
 **Flux** :
 1. `GET /wp-json/edi/v1/pending-translations?limit=1` — priorité pages, puis articles FR publiés sans traduction EN
-2. `GET` contenu complet FR
+2. `GET` contenu complet FR (récupère aussi ses catégories, transmises en `fr_categories` jusqu'à la fin du flux)
 3. Claude traduit (system prompt strict : sentence case, expressions interdites qui trahissent une traduction machine, préserve tout le HTML/tableaux/images tel quel)
-4. **`POST /wp-json/edi/v1/localize-links`** (ajouté août 2026) : réécrit les liens internes du contenu traduit vers leur équivalent EN quand une traduction publiée existe (sinon laisse le lien FR, jamais de lien cassé)
-5. `POST /wp/v2/posts` — crée le brouillon EN
-6. `POST /wp-json/edi/v1/link-translations` — lie FR↔EN dans Polylang, copie l'image à la une FR → EN si l'EN n'en a pas déjà une
+4. **Mapping catégorie FR → EN** (ajouté août 2026, nœud "Extraire traduction") : table fixe `{4:45, 6:48, 19:51, 2:54, 5:57}`, appliquée uniquement pour le post_type `post` (les pages n'ont pas de catégories)
+5. **`POST /wp-json/edi/v1/localize-links`** (ajouté août 2026) : réécrit les liens internes du contenu traduit vers leur équivalent EN quand une traduction publiée existe (sinon laisse le lien FR, jamais de lien cassé)
+6. `POST /wp/v2/posts` — crée le brouillon EN, avec la bonne catégorie et le contenu aux liens localisés
+7. `POST /wp-json/edi/v1/link-translations` — lie FR↔EN dans Polylang, copie l'image à la une FR → EN si l'EN n'en a pas déjà une
 
 Le brouillon EN reste en `draft` — publication manuelle, comme côté FR.
 
@@ -251,6 +263,7 @@ Fichier : `/var/www/html/wp-content/mu-plugins/edi-translation-api.php` (charge 
 - **Code node n8n multi-items** : un nœud `Code` traitant 3 images en une seule exécution perdait 2 items sur 3 par défaut (mode `runOnceForAllItems` implicite). **Solution** : mode explicite `runOnceForEachItem` + format de retour adapté (objet simple, pas de tableau).
 - **Tirets cadratins (—)** : présents dans les premiers articles générés, retirés a posteriori. Règle ajoutée à la méthodologie : jamais de `—` dans le texte des articles.
 - **Elementor accidentel** : un article ouvert manuellement dans WP Admin a été marqué `_elementor_edit_mode: builder` sans contenu Elementor réel, alourdissant inutilement la page. Les articles créés par le pipeline (`Publier_EDI`) restent en édition classique par défaut ; éviter de cliquer "Modifier avec Elementor" sur un article du pipeline.
+- **Catégorie manquante sur les traductions EN** : le workflow de traduction ne transmettait jamais de catégorie au brouillon EN créé, qui tombait donc en "Uncategorized". **Solution** : transmission de `fr_categories` depuis la lecture du post FR + table de correspondance FR→EN codée en dur dans le nœud "Extraire traduction" (voir section 6 et 8).
 
 ---
 
