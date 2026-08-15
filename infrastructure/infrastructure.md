@@ -268,6 +268,15 @@ Fichier : `/var/www/html/wp-content/mu-plugins/edi-translation-api.php` (charge 
 
 ---
 
+## 11. Documentation — fichiers obsolètes nettoyés (2026-08-15)
+
+Deux fichiers dans `automatisations/` dataient d'avant la bascule vers Notion (mai 2026) et décrivaient une architecture révolue (déclencheur Telegram, validation par message Telegram, EN publié en `draft`). Ils ont été mis à jour le 2026-08-15 pour ne plus induire en erreur :
+
+- **`automatisations/README.md`** : réécrit pour refléter le pipeline Notion actuel, pointe désormais vers ce fichier (`infrastructure.md`) comme référence complète.
+- **`automatisations/workflow-brief-edi-partie1.md`** : conservé mais marqué en tête comme document **historique** (décrit la toute première version de `Brief_EDI` avant le passage au poll Notion) — utile pour comprendre l'évolution de la conception, plus représentatif du fonctionnement actuel.
+
+---
+
 ## Ce qui reste manuel / non construit
 
 - Publication finale **FR** : toujours un clic manuel dans WP Admin, par choix (la publication EN, elle, est automatique depuis le 2026-08-15).
