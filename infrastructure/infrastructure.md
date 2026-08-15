@@ -70,7 +70,8 @@ Construit en plusieurs sessions à partir de juillet 2026. Objectif : produire d
         ▼
 [Brief_EDI]  (n8n, poll quotidien 9h)
         │  Perplexity Sonar Pro → plan de recherche
-        │  Gemini → 3 images, uploadées directement dans la médiathèque WordPress
+        │  Gemini → 3 images, compressées puis uploadées directement
+        │  dans la médiathèque WordPress
         │  écrit plan + références images dans Notion, État = "Brief validé"
         ▼
  Notion : État = "Brief validé"
@@ -121,7 +122,7 @@ Deux points de validation humaine sur le contenu FR (Brief validé → Rédactio
   ```
 - Propriété **"Résumé"** (rich_text) : contient le lien cliquable vers le brouillon WordPress une fois `Publier_EDI` passé — c'est le seul endroit à regarder pour aller relire un article.
 - Propriété **"Nom de la tâche"** (title) : le sujet/titre de l'article.
-- Les propriétés `Lancer rédaction`, `Brief généré`, `Article rédigé`, `Lancer brief`, `Autre tâches` sont des restes d'anciennes versions du pipeline (Gmail/Sheets) — plus utilisées, ignorer.
+- Les propriétés `Lancer rédaction`, `Brief généré`, `Article rédigé`, `Lancer brief`, `Autre tâches` (restes d'anciennes versions du pipeline Gmail/Sheets, plus utilisées) ont été supprimées de la base le 2026-08-15.
 
 ---
 
@@ -150,8 +151,9 @@ Deux points de validation humaine sur le contenu FR (Brief validé → Rédactio
 1. Poll Notion → cartes État = "Brief"
 2. Perplexity Sonar Pro → plan de recherche en 3 blocs (axes / objectif / bénéfices), écrit dans le corps de la page Notion
 3. Gemini (`gemini-2.5-flash` pour les prompts, `gemini-3-pro-image-preview` pour les images) → génère 3 images
-4. **Chaque image est uploadée directement dans la médiathèque WordPress** (`POST /wp-json/wp/v2/media`, credential manuel `bot-redaction`, pas via Notion — voir "bug corrigé" plus bas) puis une ligne texte cliquable `Image WordPress generee (id=<id>) : voir l'image` est ajoutée à la page Notion
-5. État → "Brief validé"
+4. **Compression** (nœud `Compresser image`, ajouté 2026-08-15) : chaque image est redimensionnée (max 1400px, GraphicsMagick via le nœud `Edit Image` de n8n) et ré-encodée en JPEG qualité 78 avant l'upload — les images générées pesaient 720 Ko à 1 Mo, elles pèsent désormais ~150-230 Ko sans perte visible. Testé directement sur une image réelle du pipeline (984 Ko → 226 Ko) avant mise en production.
+5. **Chaque image compressée est uploadée directement dans la médiathèque WordPress** (`POST /wp-json/wp/v2/media`, credential manuel `bot-redaction`, pas via Notion — voir "bug corrigé" plus bas) puis une ligne texte cliquable `Image WordPress generee (id=<id>) : voir l'image` est ajoutée à la page Notion
+6. État → "Brief validé"
 
 **Bug corrigé (août 2026)** : le nœud d'ajout d'image dans Notion avait un bug de bibliothèque HTTP interne à n8n (voir historique plus bas) — la solution a été de sortir complètement Notion du circuit image et d'uploader directement vers WordPress.
 
@@ -262,6 +264,7 @@ Fichier : `/var/www/html/wp-content/mu-plugins/edi-translation-api.php` (charge 
 - **Tirets cadratins (—)** : présents dans les premiers articles générés, retirés a posteriori. Règle ajoutée à la méthodologie : jamais de `—` dans le texte des articles.
 - **Elementor accidentel** : un article ouvert manuellement dans WP Admin a été marqué `_elementor_edit_mode: builder` sans contenu Elementor réel, alourdissant inutilement la page. Les articles créés par le pipeline (`Publier_EDI`) restent en édition classique par défaut ; éviter de cliquer "Modifier avec Elementor" sur un article du pipeline.
 - **Catégorie manquante sur les traductions EN** : le workflow de traduction ne transmettait jamais de catégorie au brouillon EN créé, qui tombait donc en "Uncategorized". **Solution** : transmission de `fr_categories` depuis la lecture du post FR + table de correspondance FR→EN codée en dur dans le nœud "Extraire traduction" (voir section 6 et 8).
+- **Images générées trop lourdes** : les images Gemini uploadées telles quelles pesaient 720 Ko à 1 Mo chacune (3 à 7 par article), pénalisant le temps de chargement des pages. **Solution** : nœud `Compresser image` ajouté dans `Brief_EDI` juste avant l'upload WordPress (GraphicsMagick, resize max 1400px + JPEG qualité 78, ~150-230 Ko en sortie). GraphicsMagick est déjà présent dans le container n8n (`gm` binaire, testé et confirmé).
 
 ---
 
