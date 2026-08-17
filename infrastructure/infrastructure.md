@@ -1,6 +1,6 @@
 # Infrastructure & Outils — exportdirectinfo.com
 
-_Mis à jour : 2026-08-15_
+_Mis à jour : 2026-08-17_
 
 > Note : ce fichier peut être renommé plus tard si son contenu (pipeline de contenu) mérite un fichier dédié séparé de l'infrastructure serveur pure. Pour l'instant tout est ici.
 
@@ -144,18 +144,20 @@ Deux points de validation humaine sur le contenu FR (Brief validé → Rédactio
 | Paramètre | Valeur |
 |---|---|
 | ID workflow | `o5tsXNCUXy65mmQb` |
-| Déclencheur | Schedule, quotidien 9h (`triggerAtHour: 9`) |
+| Déclencheur | Schedule, quotidien 9h heure de Paris (`triggerAtHour: 9`, soit ~07h UTC en été) |
 | Statut | Actif |
 
 **Flux** :
 1. Poll Notion → cartes État = "Brief"
 2. Perplexity Sonar Pro → plan de recherche en 3 blocs (axes / objectif / bénéfices), écrit dans le corps de la page Notion
-3. Gemini (`gemini-2.5-flash` pour les prompts, `gemini-3-pro-image-preview` pour les images) → génère 3 images
-4. **Compression** (nœud `Compresser image`, ajouté 2026-08-15) : chaque image est redimensionnée (max 1400px, GraphicsMagick via le nœud `Edit Image` de n8n) et ré-encodée en JPEG qualité 78 avant l'upload — les images générées pesaient 720 Ko à 1 Mo, elles pèsent désormais ~150-230 Ko sans perte visible. Testé directement sur une image réelle du pipeline (984 Ko → 226 Ko) avant mise en production.
+3. Gemini (`gemini-2.5-flash` pour les prompts, `gemini-3-pro-image-preview` pour les images) → génère 3 images. **Style photographique** (renforcé le 2026-08-17, nœud `set_build_prompts_request1`) : consignes explicites anti-rendu-IA (pas de peau/matières trop lisses, pas d'éclairage studio symétrique, pas de couleurs sursaturées, pas d'aspect 3D/illustration) et en faveur d'un style photo-reportage documentaire (grain léger, imperfections naturelles, cadrage légèrement décentré, texture réaliste). À valider visuellement sur le prochain titre traité — demandé par l'utilisateur car les premières images générées paraissaient "trop parfaites".
+4. **Compression** (nœud `Compresser image`, ajouté 2026-08-15) : chaque image est redimensionnée (max 1400px, GraphicsMagick via le nœud `Edit Image` de n8n) et ré-encodée en JPEG qualité 78 avant l'upload — les images générées pesaient 720 Ko à 1 Mo, elles pèsent désormais ~150-230 Ko sans perte visible. Testé directement sur une image réelle du pipeline (984 Ko → 226 Ko), puis confirmé en conditions réelles (183-255 Ko sur un run complet le 2026-08-17).
 5. **Chaque image compressée est uploadée directement dans la médiathèque WordPress** (`POST /wp-json/wp/v2/media`, credential manuel `bot-redaction`, pas via Notion — voir "bug corrigé" plus bas) puis une ligne texte cliquable `Image WordPress generee (id=<id>) : voir l'image` est ajoutée à la page Notion
 6. État → "Brief validé"
 
 **Bug corrigé (août 2026)** : le nœud d'ajout d'image dans Notion avait un bug de bibliothèque HTTP interne à n8n (voir historique plus bas) — la solution a été de sortir complètement Notion du circuit image et d'uploader directement vers WordPress.
+
+**Bug corrigé (2026-08-17)** : le nœud `Ecrire ID media Notion` (écrit le lien cliquable de chaque image dans Notion) contenait une apostrophe française non échappée dans son expression JS (`'voir l'image'`), ce qui cassait la syntaxe et faisait planter le workflow à chaque exécution, dès la première image de la boucle. Voir historique section 10 pour le détail.
 
 ---
 
@@ -265,6 +267,7 @@ Fichier : `/var/www/html/wp-content/mu-plugins/edi-translation-api.php` (charge 
 - **Elementor accidentel** : un article ouvert manuellement dans WP Admin a été marqué `_elementor_edit_mode: builder` sans contenu Elementor réel, alourdissant inutilement la page. Les articles créés par le pipeline (`Publier_EDI`) restent en édition classique par défaut ; éviter de cliquer "Modifier avec Elementor" sur un article du pipeline.
 - **Catégorie manquante sur les traductions EN** : le workflow de traduction ne transmettait jamais de catégorie au brouillon EN créé, qui tombait donc en "Uncategorized". **Solution** : transmission de `fr_categories` depuis la lecture du post FR + table de correspondance FR→EN codée en dur dans le nœud "Extraire traduction" (voir section 6 et 8).
 - **Images générées trop lourdes** : les images Gemini uploadées telles quelles pesaient 720 Ko à 1 Mo chacune (3 à 7 par article), pénalisant le temps de chargement des pages. **Solution** : nœud `Compresser image` ajouté dans `Brief_EDI` juste avant l'upload WordPress (GraphicsMagick, resize max 1400px + JPEG qualité 78, ~150-230 Ko en sortie). GraphicsMagick est déjà présent dans le container n8n (`gm` binaire, testé et confirmé).
+- **Apostrophe cassant `Ecrire ID media Notion` (découvert le 2026-08-17)** : le corps JSON de ce nœud contenait `text: { content: 'voir l'image', ... }` — l'apostrophe de "l'image" fermait prématurément la chaîne JS entre guillemets simples, provoquant une erreur `invalid syntax` systématique dès la première image de la boucle. Découvert en lançant manuellement `Brief_EDI` sur un titre resté bloqué en "Brief" toute la matinée (le plan de recherche s'écrivait bien, mais la boucle image plantait toujours au même endroit, laissant la carte Notion sans images et le statut jamais mis à jour). **Solution** : remplacement par des guillemets doubles (`"voir l'image"`). Une image et un doublon de plan de recherche générés par la tentative ratée ont été nettoyés manuellement (WordPress + Notion) après correction.
 
 ---
 
