@@ -1,1 +1,209 @@
-PLACEHOLDER
+{
+  "name": "Redaction_EDI",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] } },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-608, 0],
+      "id": "fa8b79cd-b177-4deb-9a46-1e6a047c7f99",
+      "name": "Poll Notion — redaction"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": { "__rl": true, "value": "3548e6c9-f9d4-80d8-918a-dd48a51f9198", "mode": "id", "cachedResultName": "Article EDI" },
+        "limit": 3,
+        "simple": false,
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": { "conditions": [{ "key": "État|status", "condition": "equals", "statusValue": "Rédaction" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [-384, 0],
+      "id": "023422cd-d54e-449e-9042-66144d19a557",
+      "name": "Notion — liste Redaction",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": { "jsCode": "const p = $json.properties || {};\nconst resumeProp = p['Résumé'] || {};\nconst resumeText = (resumeProp.rich_text && resumeProp.rich_text[0] && resumeProp.rich_text[0].plain_text) || '';\nif (resumeText.trim()) {\n  return [];\n}\nconst titleProp = p['Nom de la tâche'] || {};\nconst title = (titleProp.title && titleProp.title[0] && titleProp.title[0].plain_text) || '';\nconst etiquettesProp = p['Étiquettes'] || {};\nconst etiquettes = etiquettesProp.multi_select || [];\nconst etiquette = etiquettes.length ? etiquettes[0].name : '';\nreturn [{ json: { sujet: title.trim(), notion_page_id: $json.id, etiquette } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 0],
+      "id": "efed2dbd-4cdc-48d6-b6fc-7f0c4ec11607",
+      "name": "Contexte Notion (sujet)"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.notion.com/v1/blocks/' + $('Contexte Notion (sujet)').first().json.notion_page_id + '/children?page_size=100' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [64, 0],
+      "id": "f76efec5-d74c-40bd-97cf-61cc775cab66",
+      "name": "Lire brief (blocks Notion)",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": { "jsCode": "const results = $json.results || [];\nconst sujet = $('Contexte Notion (sujet)').first().json.sujet;\nconst pageId = $('Contexte Notion (sujet)').first().json.notion_page_id;\nconst lines = [];\nlet image_couverture_id = null;\nconst imageRe = /Image WordPress generee \\(id=(\\d+)\\)/;\nfor (const block of results) {\n  const type = block.type;\n  const richText = block[type] && block[type].rich_text;\n  if (!richText) continue;\n  const text = richText.map(t => t.plain_text || '').join('');\n  if (!text.trim()) continue;\n  const m = text.match(imageRe);\n  if (m) {\n    if (image_couverture_id === null) image_couverture_id = parseInt(m[1], 10);\n    continue;\n  }\n  lines.push(text.trim());\n}\nreturn [{ json: { sujet, notion_page_id: pageId, brief: lines.join('\\n\\n'), image_couverture_id } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [288, 0],
+      "id": "f3ce95f0-b040-4835-8568-30425bbb7632",
+      "name": "Extraire brief"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "perplexityApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { model: \"sonar-deep-research\", messages: [{ role: \"system\", content: \"Tu es un chercheur expert en agroalimentaire africain. Fournis des faits precis, statistiques 2022-2025, sources credibles (Banque mondiale, FAO, BAD, BCEAO). Reponds en francais avec des sections claires.\" }, { role: \"user\", content: \"Sujet : \" + $json.sujet + \"\\n\\nPlan de recherche :\\n\" + $json.brief }], max_tokens: 4000 } }}",
+        "options": { "timeout": 360000 }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [512, 0],
+      "id": "91b0cb51-64db-4359-a9b6-1ca2996837c1",
+      "name": "Sonar Deep Research",
+      "credentials": { "perplexityApi": { "id": "8y4LAqyV0ca2D8ie", "name": "Perplexity API" } }
+    },
+    {
+      "parameters": { "jsCode": "const research = $json.choices && $json.choices[0]\n  ? $json.choices[0].message.content : '';\nconst citations = ($json.citations || []).map((c, i) => `[${i+1}] ${c}`).join('\\n');\nconst sujet = $('Extraire brief').first().json.sujet;\nconst brief = $('Extraire brief').first().json.brief;\nconst pageId = $('Extraire brief').first().json.notion_page_id;\nconst image_couverture_id = $('Extraire brief').first().json.image_couverture_id;\nconst userPrompt = [\n  'Sujet : ' + sujet,\n  '',\n  'Plan de recherche :',\n  brief,\n  '',\n  'Recherche approfondie et sources :',\n  research,\n  '',\n  'Sources :',\n  citations\n].join('\\n');\nreturn [{ json: { notion_page_id: pageId, sujet, image_couverture_id, user_prompt: userPrompt } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 0],
+      "id": "e1a14b43-59be-42b7-b7ea-0643a7f9cac9",
+      "name": "Preparer input Claude"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-api-key", "value": "={{ $credentials.anthropicApi.apiKey }}" }, { "name": "anthropic-version", "value": "2023-06-01" }, { "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "NOTE: prompt redacteur complet omis de cet export (plusieurs Ko, voir n8n directement ou methodologie-redaction-deep-research.md pour les regles de structure/style). model=claude-opus-4-5, max_tokens=16000.",
+        "options": { "timeout": 120000 }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [944, 0],
+      "id": "4b3af6df-e82b-4d86-aab3-8450fe751d3a",
+      "name": "Claude Redacteur",
+      "credentials": { "anthropicApi": { "id": "5JxCEGCMxT6Tcj9a", "name": "Claude Account" } }
+    },
+    {
+      "parameters": { "jsCode": "const content = $json.content && $json.content[0]\n  ? $json.content[0].text : '';\nconst pageId = $('Preparer input Claude').first().json.notion_page_id;\nconst sujet = $('Preparer input Claude').first().json.sujet;\nconst image_couverture_id = $('Preparer input Claude').first().json.image_couverture_id || null;\nconst etiquette = $('Contexte Notion (sujet)').first().json.etiquette;\n\nconst CATEGORIE_MAP = {\n  'Agro-alimentaire': 4,\n  'Douanes & Logistiques': 2,\n  'Certifications': 6,\n  'Financements': 19,\n  'Artisant & Textile': 1,\n  'Etudes de cas PME': 5,\n  'Page statiques': 1,\n};\nconst categorie_wp = CATEGORIE_MAP[etiquette] || 1;\n\nconst metadata = { titre_wp: sujet, categorie_wp, image_couverture_id };\n\nfunction chunk(str, size) {\n  const parts = [];\n  for (let i = 0; i < str.length; i += size) parts.push(str.substring(i, i + size));\n  return parts.length ? parts : [''];\n}\nconst htmlRichText = chunk(content, 2000).map(c => ({ type: 'text', text: { content: c } }));\n\nconst notion_blocks = {\n  children: [\n    { type: 'code', code: {\n        language: 'json',\n        rich_text: [{ type: 'text', text: { content: JSON.stringify(metadata, null, 2) } }]\n    }},\n    { type: 'heading_2', heading_2: { rich_text: [{ type: 'text', text: { content: 'Article' } }] } },\n    { type: 'code', code: {\n        language: 'html',\n        rich_text: htmlRichText\n    }},\n  ]\n};\nreturn [{ json: { notion_page_id: pageId, notion_blocks } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1168, 0],
+      "id": "81d3b548-a6e4-4a70-9533-5b18c6f0036f",
+      "name": "Build article body"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/blocks/' + $json.notion_page_id + '/children' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.notion_blocks }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1392, 0],
+      "id": "7e085649-ec3a-4926-927c-abb05828e577",
+      "name": "Notion — Ecrire article",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": { "__rl": true, "value": "={{ $('Contexte Notion (sujet)').first().json.notion_page_id }}", "mode": "id" },
+        "propertiesUi": { "propertyValues": [{ "key": "État|status", "statusValue": "Article validé" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1600, 0],
+      "id": "4f925924-8533-4fea-a517-a08aaafeaf80",
+      "name": "Notion — fin redaction (etat)",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/' + $json.notion_page_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { 'Résumé': { rich_text: [{ type: 'text', text: { content: '⏳ Rédaction en cours...' } }] } } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-64, -160],
+      "id": "02212a92-654f-4a81-85a2-74bc41d478e0",
+      "name": "Notion — verrou redaction",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/' + $('Contexte Notion (sujet)').first().json.notion_page_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { 'Résumé': { rich_text: [] } } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [3120, 0],
+      "id": "6b1883fb-fc61-40d6-bca4-2bf37ebcde82",
+      "name": "Notion — lever verrou",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    }
+  ],
+  "connections": {
+    "Poll Notion — redaction": { "main": [[{ "node": "Notion — liste Redaction", "type": "main", "index": 0 }]] },
+    "Notion — liste Redaction": { "main": [[{ "node": "Contexte Notion (sujet)", "type": "main", "index": 0 }]] },
+    "Contexte Notion (sujet)": { "main": [[{ "node": "Notion — verrou redaction", "type": "main", "index": 0 }]] },
+    "Lire brief (blocks Notion)": { "main": [[{ "node": "Extraire brief", "type": "main", "index": 0 }]] },
+    "Extraire brief": { "main": [[{ "node": "Sonar Deep Research", "type": "main", "index": 0 }]] },
+    "Sonar Deep Research": { "main": [[{ "node": "Preparer input Claude", "type": "main", "index": 0 }]] },
+    "Preparer input Claude": { "main": [[{ "node": "Claude Redacteur", "type": "main", "index": 0 }]] },
+    "Claude Redacteur": { "main": [[{ "node": "Build article body", "type": "main", "index": 0 }]] },
+    "Build article body": { "main": [[{ "node": "Notion — Ecrire article", "type": "main", "index": 0 }]] },
+    "Notion — Ecrire article": { "main": [[{ "node": "Notion — fin redaction (etat)", "type": "main", "index": 0 }]] },
+    "Notion — verrou redaction": { "main": [[{ "node": "Lire brief (blocks Notion)", "type": "main", "index": 0 }]] },
+    "Notion — fin redaction (etat)": { "main": [[{ "node": "Notion — lever verrou", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" }
+}
