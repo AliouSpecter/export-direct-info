@@ -1,1 +1,315 @@
-PLACEHOLDER
+{
+  "name": "Brief_EDI",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "=Tu es un expert en agroalimentaire, commerce international, SEO et Generative Engine Optimization, spécialisé dans les TPE et micro-entreprises agricoles africaines.\n\n# Mission\nÀ partir du sujet fourni, tu dois produire un plan de recherche structuré en 3 blocs :\n1. Axes à traiter obligatoirement (orientés SEO + Generative Engine Optimization + Business)\n2. Objectif de l'article\n3. Bénéfices attendus pour la cible\n\n# Contraintes importantes\n- Cible : dirigeants et managers de petites entreprises agroalimentaires africaines\n- Angle : contenu pratique, concret, orienté solutions et gains commerciaux\n- Éviter les explications théoriques, les définitions et le jargon\n- Donner priorité aux mécanismes, leviers, contraintes, coûts, ROI et accès au marché\n- Objectif SEO : identifier les angles à forte intention de recherche (informationnelle + transactionnelle)\n- Objectif GEO (Generative Engine Optimization) : \noptimiser la structure du contenu pour les moteurs IA (Perplexity, ChatGPT, Gemini), en mettant en avant les informations actionnables à forte valeur ajoutée pour les PME agroalimentaires africaines (financement, certifications, normes, export, logistique, filières, marchés). À ce stade, GEO est un critère d'évaluation du plan, pas un axe de contenu.\n\n\n# Format de sortie (obligatoire)\n1. **Axes à traiter obligatoirement :**\n- (liste à puces, 3 à 5 lignes, orientées bénéfices + SEO + Generative Engine Optimization )\n2. **Objectif de l'article :**\n- (Une phrase)\n3. **Bénéfices attendus pour la cible :**\n- (3 à 6 bullet points orientés ROI + marché + action)",
+              "role": "system"
+            },
+            {
+              "content": "=# Sujet : {{ $('Contexte Notion (sujet)').first().json.message.text }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [208, 0],
+      "id": "bb1b2a72-5abe-40d8-b059-9d4873f6d3df",
+      "name": "Sonar Pro - Construire plan de recherche",
+      "credentials": { "perplexityApi": { "id": "8y4LAqyV0ca2D8ie", "name": "Perplexity API" } }
+    },
+    {
+      "parameters": { "content": "# Brief_EDI\n## Flux : Sonar → Build brief → Ecrire brief → Gemini prompts → Loop images → fin", "height": 200, "width": 5104 },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [-672, -432],
+      "typeVersion": 1,
+      "id": "b3bf3acb-7885-4090-9d9e-d99ac964b2e3",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] } },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-496, 0],
+      "id": "5a63c567-d657-44ae-8054-d5bb7b7f8dd6",
+      "name": "Poll Notion — articles"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": { "__rl": true, "value": "3548e6c9-f9d4-80d8-918a-dd48a51f9198", "mode": "id", "cachedResultName": "Article EDI" },
+        "limit": 5,
+        "simple": false,
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": { "conditions": [{ "key": "État|status", "condition": "equals", "statusValue": "Brief" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [-288, 0],
+      "id": "e726b9f3-39c2-4717-b629-dfb3dab65d11",
+      "name": "Notion — liste Projet articles",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": { "jsCode": "const p = $json.properties || {};\nconst resumeProp = p['Résumé'] || {};\nconst resumeText = (resumeProp.rich_text && resumeProp.rich_text[0] && resumeProp.rich_text[0].plain_text) || '';\nif (resumeText.trim()) {\n  return [];\n}\nconst titleProp = p['Nom de la tâche'] || {};\nconst title = (titleProp.title && titleProp.title[0] && titleProp.title[0].plain_text) || '';\nreturn [{ json: { message: { text: title.trim() }, notion_page_id: $json.id } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-64, 0],
+      "id": "0ae856c5-c0bf-4434-93e1-89700bfaa0ca",
+      "name": "Contexte Notion (sujet)"
+    },
+    {
+      "parameters": { "jsCode": "const raw = ($json.choices && $json.choices[0] && $json.choices[0].message)\n  ? $json.choices[0].message.content : ($json.content || '');\nlet text = String(raw || '');\ntext = text.replace(/\\[\\d+(?:\\]\\[\\d+)*\\]/g, '');\nconst pageId = $('Contexte Notion (sujet)').first().json.notion_page_id;\n\nfunction toBlocks(t) {\n  const blocks = [];\n  const paras = t.split(/\\n{2,}/).filter(p => p.trim());\n  for (const para of paras) {\n    const line = para.trim();\n    if (line.startsWith('## ')) {\n      blocks.push({ type: 'heading_2', heading_2: { rich_text: [{ type: 'text', text: { content: line.replace(/^## /, '').slice(0, 1990) } }] } });\n    } else if (line.startsWith('# ')) {\n      blocks.push({ type: 'heading_1', heading_1: { rich_text: [{ type: 'text', text: { content: line.replace(/^# /, '').slice(0, 1990) } }] } });\n    } else {\n      let rem = line;\n      while (rem.length > 0) {\n        blocks.push({ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: rem.slice(0, 1900) } }] } });\n        rem = rem.slice(1900);\n      }\n    }\n  }\n  return blocks;\n}\n\nconst contentBlocks = toBlocks(text);\nconst notion_blocks = { children: [\n  { type: 'heading_2', heading_2: { rich_text: [{ type: 'text', text: { content: 'Brief généré' } }] } },\n  ...contentBlocks\n] };\nconst brief_text = text.slice(0, 1500);\nreturn [{ json: { notion_page_id: pageId, notion_blocks, brief_text } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 0],
+      "id": "71897913-1d48-4318-a5f6-f20cbb28b0ee",
+      "name": "Build brief body"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/blocks/' + $json.notion_page_id + '/children' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.notion_blocks) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1456, 0],
+      "id": "b0ff8e43-1d32-4bcc-9f08-0b3c15fd858e",
+      "name": "Notion — Ecrire brief",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": {
+        "assignments": { "assignments": [{ "id": "a446e143-a0f2-4729-8f04-411258ba569b", "name": "prompt_for_prompts", "value": "=Produis UNIQUEMENT un JSON valide sans markdown: {\"image_prompts\":[\"PROMPT_1\",\"PROMPT_2\",\"PROMPT_3\"]}  Contexte: images éditoriales réalistes (documentaire) en agroalimentaire africain (TPE/PME), sans texte lisible, sans logo, lumière naturelle.  Sujet: {{ $('Contexte Notion (sujet)').first().json.message.text }}  Plan: {{ $('Build brief body').first().json.brief_text }}", "type": "string" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1712, 0],
+      "id": "cb73eaa9-ec90-4986-b8d2-1ed9b00bc3c2",
+      "name": "set_build_prompts_request1"
+    },
+    {
+      "parameters": { "method": "POST", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", "authentication": "predefinedCredentialType", "nodeCredentialType": "googlePalmApi", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt_for_prompts }] }] }) }}", "options": {} },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1968, 0],
+      "id": "d025ff9d-7f60-4c3d-8d15-e9c28d573194",
+      "name": "generate_prompts1",
+      "credentials": { "googlePalmApi": { "id": "GxUgssSRZHrovJgn", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": { "jsCode": "const parts = $json.candidates?.[0]?.content?.parts ?? [];\nconst text = parts.map(p => p.text).filter(Boolean).join('\\n').trim();\nconst match = text.match(/\\{[\\s\\S]*\\}/);\nif (!match) throw new Error('Aucun JSON trouvé dans la réponse du modèle.');\nlet data;\ntry { data = JSON.parse(match[0]); } catch(e) { throw new Error('JSON invalide: ' + e.message); }\nconst prompts = data.image_prompts || data.prompts;\nif (!Array.isArray(prompts) || prompts.length === 0) throw new Error('image_prompts manquant ou vide.');\nreturn [{ json: { image_prompts: prompts } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2224, 0],
+      "id": "e45e7424-9bec-4794-85a6-7efa1ed56650",
+      "name": "Extract JSON to text1"
+    },
+    {
+      "parameters": { "fieldToSplitOut": "image_prompts", "options": {} },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [2432, 0],
+      "id": "b5d37b41-2144-4600-aa2d-1b66de13e421",
+      "name": "Split Out array to 3 items1"
+    },
+    {
+      "parameters": { "options": {} },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [2640, 0],
+      "id": "9c3acce9-e1bd-43a0-be4b-b4b0d59194d5",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": { "__rl": true, "value": "={{ $('Contexte Notion (sujet)').first().json.notion_page_id }}", "mode": "id" },
+        "propertiesUi": { "propertyValues": [{ "key": "État|status", "statusValue": "Brief validé" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [2896, -160],
+      "id": "4c4716f4-d0c4-41bb-8b5b-dffd7e0c6ed0",
+      "name": "Notion — fin brief (etat)",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": { "method": "POST", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent", "authentication": "predefinedCredentialType", "nodeCredentialType": "googlePalmApi", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.image_prompts }] }] }) }}", "options": {} },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [2896, 160],
+      "id": "057e36fa-1b4b-49e7-8831-e88c1a118d01",
+      "name": "generate_image1",
+      "credentials": { "googlePalmApi": { "id": "GxUgssSRZHrovJgn", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [3120, 160],
+      "id": "8846ee16-3bfc-4c6d-a1b9-f2b4d9382c44",
+      "name": "Wait1",
+      "webhookId": "f7fd055b-d278-4482-b631-9cc414559ecf"
+    },
+    {
+      "parameters": { "assignments": { "assignments": [{ "id": "f7e5d381-2de4-4546-949f-16b690538c82", "name": "image_result", "value": "={{ $json.candidates[0].content.parts.filter(item => item.inlineData).first().inlineData.data }}", "type": "string" }] }, "options": {} },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3344, 160],
+      "id": "38178a05-8db2-47b4-a838-9090e1f2e165",
+      "name": "set_result_image1"
+    },
+    {
+      "parameters": {
+        "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [{ "id": "9bb24997-c505-424a-82a3-505fe1633ff2", "leftValue": "={{ $json.image_result }}", "rightValue": "", "operator": { "type": "string", "operation": "exists", "singleValue": true } }], "combinator": "and" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [3568, 160],
+      "id": "4fb3e889-1552-4a7c-85eb-ff14e3915a03",
+      "name": "check_success1"
+    },
+    {
+      "parameters": { "operation": "toBinary", "sourceProperty": "image_result", "options": {} },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [3792, 160],
+      "id": "c4c80b6e-5e76-48c9-b928-c6f1994661fa",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://exportdirectinfo.com/wp-json/wp/v2/media",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "Basic ***REDACTED_SEE_N8N_CREDENTIAL***" }, { "name": "Content-Disposition", "value": "attachment; filename=\"edi-image.jpg\"" }] },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [4016, 160],
+      "id": "88a2688d-2fd9-454f-9884-64b018b91b17",
+      "name": "Upload image WordPress"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/blocks/' + $('Contexte Notion (sujet)').first().json.notion_page_id + '/children' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ children: [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: 'Image WordPress generee (id=' + $json.id + ') : ' } }, { type: 'text', text: { content: \"voir l'image\", link: { url: $json.source_url } } }] } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [4240, 160],
+      "id": "a8c9273a-e257-44d1-85d0-98224195e0ef",
+      "name": "Ecrire ID media Notion",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": { "operation": "resize", "dataPropertyName": "data", "width": 1400, "height": 1400, "resizeOption": "maximumArea", "options": { "format": "jpeg", "quality": 78, "destinationKey": "data" } },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [3904, 280],
+      "id": "fe59f176-ee51-4370-aa32-b2aa6beb1737",
+      "name": "Compresser image"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/' + $json.notion_page_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { 'Résumé': { rich_text: [{ type: 'text', text: { content: '⏳ Brief en cours...' } }] } } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [64, -160],
+      "id": "e88b113f-7c5d-455d-8192-b5aa3048a442",
+      "name": "Notion — verrou brief",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/' + $('Contexte Notion (sujet)').first().json.notion_page_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { 'Résumé': { rich_text: [] } } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [3136, -160],
+      "id": "1b981af8-5b4f-4444-ba1b-75a5cb0c4b2d",
+      "name": "Notion — lever verrou brief",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    }
+  ],
+  "connections": {
+    "Poll Notion — articles": { "main": [[{ "node": "Notion — liste Projet articles", "type": "main", "index": 0 }]] },
+    "Notion — liste Projet articles": { "main": [[{ "node": "Contexte Notion (sujet)", "type": "main", "index": 0 }]] },
+    "Contexte Notion (sujet)": { "main": [[{ "node": "Notion — verrou brief", "type": "main", "index": 0 }]] },
+    "Sonar Pro - Construire plan de recherche": { "main": [[{ "node": "Build brief body", "type": "main", "index": 0 }]] },
+    "Build brief body": { "main": [[{ "node": "Notion — Ecrire brief", "type": "main", "index": 0 }]] },
+    "Notion — Ecrire brief": { "main": [[{ "node": "set_build_prompts_request1", "type": "main", "index": 0 }]] },
+    "set_build_prompts_request1": { "main": [[{ "node": "generate_prompts1", "type": "main", "index": 0 }]] },
+    "generate_prompts1": { "main": [[{ "node": "Extract JSON to text1", "type": "main", "index": 0 }]] },
+    "Extract JSON to text1": { "main": [[{ "node": "Split Out array to 3 items1", "type": "main", "index": 0 }]] },
+    "Split Out array to 3 items1": { "main": [[{ "node": "Loop Over Items1", "type": "main", "index": 0 }]] },
+    "Loop Over Items1": { "main": [[{ "node": "Notion — fin brief (etat)", "type": "main", "index": 0 }], [{ "node": "generate_image1", "type": "main", "index": 0 }]] },
+    "generate_image1": { "main": [[{ "node": "Wait1", "type": "main", "index": 0 }]] },
+    "Wait1": { "main": [[{ "node": "set_result_image1", "type": "main", "index": 0 }]] },
+    "set_result_image1": { "main": [[{ "node": "check_success1", "type": "main", "index": 0 }]] },
+    "check_success1": { "main": [[{ "node": "Convert to File1", "type": "main", "index": 0 }]] },
+    "Convert to File1": { "main": [[{ "node": "Compresser image", "type": "main", "index": 0 }]] },
+    "Upload image WordPress": { "main": [[{ "node": "Ecrire ID media Notion", "type": "main", "index": 0 }]] },
+    "Ecrire ID media Notion": { "main": [[{ "node": "Loop Over Items1", "type": "main", "index": 0 }]] },
+    "Compresser image": { "main": [[{ "node": "Upload image WordPress", "type": "main", "index": 0 }]] },
+    "Notion — verrou brief": { "main": [[{ "node": "Sonar Pro - Construire plan de recherche", "type": "main", "index": 0 }]] },
+    "Notion — fin brief (etat)": { "main": [[{ "node": "Notion — lever verrou brief", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" }
+}

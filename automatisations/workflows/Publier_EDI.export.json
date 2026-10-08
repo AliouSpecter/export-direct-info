@@ -1,1 +1,123 @@
-PLACEHOLDER
+{
+  "name": "Publier_EDI",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] } },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-800, 0],
+      "id": "3b0f2c11-5bb3-4929-9cf6-a70bb23d8059",
+      "name": "Planification 3h"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/3548e6c9-f9d4-80d8-918a-dd48a51f9198/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"filter\": {\"and\": [{\"property\": \"État\", \"status\": {\"equals\": \"Article validé\"}}, {\"property\": \"Résumé\", \"rich_text\": {\"is_empty\": true}}]}, \"page_size\": 5, \"sorts\": [{\"timestamp\": \"created_time\", \"direction\": \"ascending\"}]}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-600, 0],
+      "id": "8422adf3-c016-4636-b7a1-1d87d844d6bf",
+      "name": "Notion — Query Article valide",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": { "jsCode": "const results = $json.results || [];\nif (results.length === 0) { return []; }\nconst page = results[0];\nconst p = page.properties['Nom de la tâche'];\nconst title = (p.title && p.title[0] && p.title[0].plain_text) || '';\nreturn [{ json: { notion_page_id: page.id, sujet: title.trim() } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 0],
+      "id": "dd7a613e-5b0d-45e2-be0a-be98a340e780",
+      "name": "Extraire page ou stop"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.notion.com/v1/blocks/' + $json.notion_page_id + '/children?page_size=100' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-200, 0],
+      "id": "a14a246e-fcab-4f3e-bb61-0842c627853e",
+      "name": "Notion — Lire blocs",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    },
+    {
+      "parameters": { "jsCode": "const blocks = $json.results || [];\nlet meta = null;\nlet htmlParts = [];\nlet foundJson = false;\nfor (const b of blocks) {\n  if (b.type === 'code' && b.code.language === 'json' && !foundJson) {\n    const text = (b.code.rich_text || []).map(t => t.plain_text || '').join('');\n    try { meta = JSON.parse(text); foundJson = true; } catch(e) {}\n    continue;\n  }\n  if (foundJson && b.type === 'code' && b.code.language === 'html') {\n    const text = (b.code.rich_text || []).map(t => t.plain_text || '').join('');\n    htmlParts.push(text);\n  }\n}\nif (!meta) { throw new Error('Metadonnees JSON introuvables dans la page'); }\nconst full_html = htmlParts.join('');\nif (!full_html) { throw new Error('Aucun contenu HTML trouve'); }\nreturn [{ json: { titre_wp: meta.titre_wp, categorie_wp: meta.categorie_wp, image_couverture_id: meta.image_couverture_id || null, full_html, notion_page_id: $('Extraire page ou stop').first().json.notion_page_id } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "194faeec-7771-41d9-adef-372031712d5f",
+      "name": "Parser metadata + HTML"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://exportdirectinfo.com/wp-json/wp/v2/posts",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "Basic ***REDACTED_SEE_N8N_CREDENTIAL***" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.titre_wp, content: $json.full_html, status: 'draft', categories: [$json.categorie_wp], featured_media: $json.image_couverture_id || undefined }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [200, 0],
+      "id": "0395940a-1e87-4712-844e-0043776090d4",
+      "name": "Creer brouillon WordPress"
+    },
+    {
+      "parameters": { "jsCode": "const id = $json.id;\nconst link = 'https://exportdirectinfo.com/wp-admin/post.php?post=' + id + '&action=edit';\nreturn [{ json: { edit_link: link, notion_page_id: $('Parser metadata + HTML').first().json.notion_page_id } }];" },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "id": "a6fd3d51-23c1-49d8-832f-0ae8f24d0f9a",
+      "name": "Construire lien"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/' + $json.notion_page_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { 'Résumé': { rich_text: [{ type: 'text', text: { content: 'Brouillon WordPress a relire', link: { url: $json.edit_link } } }] } } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [600, 0],
+      "id": "346cdccc-5b56-4923-b400-ca292f61b359",
+      "name": "Notion — Ecrire lien Resume",
+      "credentials": { "notionApi": { "id": "tKxKVhbNPuEi00Ii", "name": "Notion API" } }
+    }
+  ],
+  "connections": {
+    "Planification 3h": { "main": [[{ "node": "Notion — Query Article valide", "type": "main", "index": 0 }]] },
+    "Notion — Query Article valide": { "main": [[{ "node": "Extraire page ou stop", "type": "main", "index": 0 }]] },
+    "Extraire page ou stop": { "main": [[{ "node": "Notion — Lire blocs", "type": "main", "index": 0 }]] },
+    "Notion — Lire blocs": { "main": [[{ "node": "Parser metadata + HTML", "type": "main", "index": 0 }]] },
+    "Parser metadata + HTML": { "main": [[{ "node": "Creer brouillon WordPress", "type": "main", "index": 0 }]] },
+    "Creer brouillon WordPress": { "main": [[{ "node": "Construire lien", "type": "main", "index": 0 }]] },
+    "Construire lien": { "main": [[{ "node": "Notion — Ecrire lien Resume", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
