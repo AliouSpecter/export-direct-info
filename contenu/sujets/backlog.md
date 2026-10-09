@@ -17,4 +17,7 @@
 
 | Mot-clé | Page existante | Position | Impressions |
 |---|---|---|---|
-| *(vide pour l'instant — à remplir sur demande)* | | | |
+| certification agroalimentaire | https://exportdirectinfo.com/combien-coute-une-certification-agroalimentaire-et-comment-la-financer/ | 19.9 | 37 |
+| financement pme afrique | https://exportdirectinfo.com/financement-des-pme-ouest-africaines-en-2025-defis-et-solutions/ | 22.8 | 38 |
+| agroalimentaire certification pme afrique | https://exportdirectinfo.com/certifications-et-financements-pour-pme-agroalimentaires-en-afrique-de-louest/ | ~20-24 (cannibalisée sur 4 pages, hub visé) | ~60 cumulées |
+| export produits alimentaires | https://exportdirectinfo.com/opportunites-dexport-agroalimentaire-vers-leurope-et-lasie/ | 25.9 | 49 |
