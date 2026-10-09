@@ -1,1 +1,28 @@
-IyBCYWNrbG9nIGRlIHN1amV0cyDigJQgRXhwb3J0IERpcmVjdCBJbmZvCgoqTWlzIOAgam91ciA6IDIwMjYtMTAtMTAqCgo+ICoqRm9uY3Rpb25uZW1lbnQgYWN0dWVsKiogOiBsYSByb3V0aW5lICJFREkg4oCUIEFsaW1lbnRhdGlvbiBCYWNrbG9nIiBuZSB0aXJlIHBsdXMgc2VzIHN1amV0cyBkJ3VuZSBsaXN0ZSBwcumAg3JpdGUuIEEgY2hhcXVlIGV44oCpY3V0aW9uLCBlbGxlIHByb3Bvc2UgdG91am91cnMgMiBzdWpldHMgOgo+IDEuIFVuIHN1amV0IHRyb3V24oCpIHBhciByZWNoZXJjaGUgd2ViIHN1ciBsJ2FjdHVhbGl04oCpIHLigKljZW50ZSAoMjAyNikgZGFucyBsZXMgZG9tYWluZXMgZHUgc2l0ZQo+IDIuIFVuIHN1amV0IGRlIHJlbmZvcmNlbWVudCwgdGly4oCpIGR1IHRhYmxlYXUgY2ktZGVzc291cwo+Cj4gU2V1bGUgbGEgc2VjdGlvbiAiUmVuZm9yY2VtZW50IiBlc3QgbHVlIHBhciBsYSByb3V0aW5lLgoKLS0tCgojIyBSZW5mb3JjZW1lbnQgKHBvc2l0aW9ucyDgIGNvbnNvbGlkZXIpCgo+IEFsaW1lbnTpgIkgbWFudWVsbGVtZW50IHBhciBDbGF1ZGUg4oCpIHBhcnRpciBkZSBHb29nbGUgU2VhcmNoIENvbnNvbGUgKHBhcyBkJ2F1dG9tYXRpc2F0aW9uIHBvdXIgbCdpbnN0YW50IOKAk+KAiSBtaXNlIOAgam91ciDgIGxhIGRlbWFuZGUpLgo+IEZvcm1hdCA6IG1vdC1jbOkgY2libGUsIHBhZ2UgZXhpc3RhbnRlIOAgYW3pbGlvcmVyLCBwb3NpdGlvbiBhY3R1ZWxsZSwgaW1wcmVzc2lvbnMgKDkwIGpvdXJzKS4KCnwgTW90LWNs6SB8IFBhZ2UgZXhpc3RhbnRlIHwgUG9zaXRpb24gfCBJbXByZXNzaW9ucyB8Cnwt0S0tfC0tLXwtLS18LS0tfAp8IGZpbmFuY2VtZW50IHBtZSBhZnJpcXVlIHwgaHR0cHM6Ly9leHBvcnRkaXJlY3RpbmZvLmNvbS9maW5hbmNlbWVudC1kZXMtcG1lLW91ZXN0LWFmcmljYWluZXMtZW4tMjAyNS1kZWZpcy1ldC1zb2x1dGlvbnMvIHwgMjIuOCB8IDM4IHwKfCBhZ3JvYWxpbWVudGFpcmUgY2VydGlmaWNhdGlvbiBwbWUgYWZyaXF1ZSB8IGh0dHBzOi8vZXhwb3J0ZGlyZWN0aW5mby5jb20vY2VydGlmaWNhdGlvbnMtZXQtZmluYW5jZW1lbnRzLXBvdXItcG1lLWFncm9hbGltZW50YWlyZXMtZW4tYWZyaXF1ZS1kZS1sb3Vlc3QvIHwgfjIwLTI0IChjYW5uaWJhbGlz6WUgc3VyIDQgcGFnZXMsIGh1YiB2aXPpKSB8IH42MCBjdW11bOllcyB8Cnwg0YXwb3J0IHByb2R1aXRzIGFsaW1lbnRhaXJlcyB8IGh0dHBzOi8vZXhwb3J0ZGlyZWN0aW5mby5jb20vb3Bwb3J0dW5pdGVzLWRleHBvcnQtYWdyb2FsaW1lbnRhaXJlLXZlcnMtbGV1cm9wZS1ldC1sYXNpZS8gfCAyNS45IHwgNDkgfAoKLS0tCgojIyBUcmFpdOkgKGhpc3RvcmlxdWUpCgotICoqY2VydGlmaWNhdGlvbiBhZ3JvYWxpbWVudGFpcmUqKiDihpIgaHR0cHM6Ly9leHBvcnRkaXJlY3RpbmZvLmNvbS9jb21iaWVuLWNvdXRlLXVuZS1jZXJ0aWZpY2F0aW9uLWFncm9hbGltZW50YWlyZS1ldC1jb21tZW50LWxhLWZpbmFuY2VyLyAo2DAyNi0xMC0xMCkgOiBkaWFnbm9zdGljIEdTQyBtb250cmUgbCdvcHBvcnR1bml06SBkZWpq4oCpIGxhcmdlbWVudCBleHBsb2l06WUgb24tcGFnZSAobW90LWNs6SBwcukhZW50IDUgZm9pcywgSDIgY291dnJhbnQgY2/7dC9maW5hbmNlbWVudCkuIFZlcmlmaeknIHF1ZSBsZXMgcGFnZXMg2ZZ1cnMgZHUgY2x1c3RlciBw2WJsaellcyBwYXIgbGUgcGlwZWxpbmUgcukkZW50ICgzMjMwIEhBQ0NQIG1pY3JvLWVudHJlcHJpc2UsIDMyNDIgQ2VydGlmaWNhdGlvbiBCaW8pIGxpZW5udCBk2YrgIHZlcnMgY2V0dGUgcGFnZTogbGUgbWFpbGxhZ2UgaW50ZXJuZSBlc3QgZOlq2CBlbiBwbGFjZS4gVGVudGF0aXZlIGQnYWpvdXRlciB1biBsaWVuIHN1cHBs6W1lbnRhaXJlIGRlcHVpcyB1bmUgcGFnZSBwbHVzIGFuY2llbm5lIChFbGVtZW50b3IsIHBvc3QgMTA2IEhBQ0NQL0lTTyAyMjAwMCkgYWJhbmRvbm7pZSDgIGNhdXNlIGQndW5lIGFub21hbGllIGRlIHJlbmR1IChjZiBDTEFVREUubWQsIHNlY3Rpb24gIk5vdGUgdGVjaG5pcXVlIOKAlCBlZGl0aW9ucyBzaWxlbmNpZXVzZW1lbnQgc2FucyBlZmZldCBzdXIgYW5jaWVubmVzIHBhZ2VzIEVsZW1lbnRvciIpLiBPcHBvcnR1bml06SBjb25zaWTpcullIGNvdXZlcnRlOyByZXRpcullIGR1IHRhYmxlYXUgYWN0aWYuCg==
+# Backlog de sujets — Export Direct Info
+
+*Mis à jour : 2026-10-10*
+
+> **Fonctionnement actuel** : la routine "EDI — Alimentation Backlog" ne tire plus ses sujets d'une liste pré-écrite. À chaque exécution, elle propose toujours 2 sujets :
+> 1. Un sujet trouvé par recherche web sur l'actualité récente (2026) dans les domaines du site
+> 2. Un sujet de renforcement, tiré du tableau ci-dessous
+>
+> Seule la section "Renforcement" est lue par la routine.
+
+---
+
+## Renforcement (positions à consolider)
+
+> Alimenté manuellement par Claude à partir de Google Search Console (pas d'automatisation pour l'instant — mise à jour à la demande).
+> Format : mot-clé cible, page existante à améliorer, position actuelle, impressions (90 jours).
+
+| Mot-clé | Page existante | Position | Impressions |
+|---|---|---|---|
+| financement pme afrique | https://exportdirectinfo.com/financement-des-pme-ouest-africaines-en-2025-defis-et-solutions/ | 22.8 | 38 |
+| agroalimentaire certification pme afrique | https://exportdirectinfo.com/certifications-et-financements-pour-pme-agroalimentaires-en-afrique-de-louest/ | ~20-24 (cannibalisée sur 4 pages, hub visé) | ~60 cumulées |
+| export produits alimentaires | https://exportdirectinfo.com/opportunites-dexport-agroalimentaire-vers-leurope-et-lasie/ | 25.9 | 49 |
+
+---
+
+## Traité (historique)
+
+- **certification agroalimentaire** → https://exportdirectinfo.com/combien-coute-une-certification-agroalimentaire-et-comment-la-financer/ (2026-10-10) : diagnostic GSC montre l'opportunité déjà largement exploitée on-page (mot-clé présent 5 fois, H2 couvrant coût/financement). Vérifié que les pages sœurs du cluster publiées par le pipeline récent (3230 HACCP micro-entreprise, 3242 Certification Bio) lient déjà vers cette page : le maillage interne est déjà en place. Tentative d'ajouter un lien supplémentaire depuis une page plus ancienne (Elementor, post 106 HACCP/ISO 22000) abandonnée à cause d'une anomalie de rendu (cf CLAUDE.md, section "Note technique — éditions silencieusement sans effet sur anciennes pages Elementor"). Opportunité considérée couverte ; retirée du tableau actif.
