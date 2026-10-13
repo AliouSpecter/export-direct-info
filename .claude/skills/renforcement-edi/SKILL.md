@@ -19,26 +19,37 @@ Si l'utilisateur ne donne pas directement l'URL cible :
 - Interroge le MCP `gscServer` (`get_advanced_search_analytics`, dimensions `query,page`) filtré sur l'URL cible pour voir : position actuelle, impressions, CTR, et **quelles requêtes précises** amènent du trafic vers cette page.
 - Vérifie s'il y a cannibalisation (plusieurs pages du site qui rankent sur le même mot-clé) — si oui, lis la règle éditoriale dans `CLAUDE.md` (section Éditorial) avant d'agir : consolider vers un hub plutôt que dupliquer.
 - Regarde le title/meta actuels (champs `rank_math_title` / `rank_math_description` exposés via l'API REST WordPress, cf. mu-plugin `edi-rankmath-rest-meta.php` déjà déployé).
+- Vérifie si le mot-clé cible apparaît littéralement dans le contenu (title, H1/intro, H2) — s'il est absent, c'est souvent la piste la plus concrète (cf. post 2260 : "financement pme afrique" n'apparaissait jamais, seulement "PME ouest-africaines").
 
 ## 2. Décider l'action
 
 Selon ce que montrent les données, une ou plusieurs de ces actions (pas besoin de toutes les faire) :
 - **Title/meta** : reformuler pour mieux coller à la requête réelle qui génère des impressions (priorité n°1 si CTR faible malgré bonne position).
-- **Maillage interne** : ajouter un lien contextuel vers/depuis le hub du cluster concerné (voir carte des clusters si elle existe, sinon regarder `contenu/strategie.md` et les pages déjà publiées sur un sujet proche).
-- **Contenu** : enrichir une section trop légère, ajouter des données/chiffres manquants, corriger un point faible identifié dans les requêtes GSC.
+- **Maillage interne** : ajouter un lien contextuel vers/depuis le hub du cluster concerné (voir carte des clusters si elle existe, sinon regarder `contenu/strategie.md` et les pages déjà publiées sur un sujet proche). Vérifier aussi le sens inverse (la page sœur lie-t-elle déjà vers la cible ?).
+- **Contenu** : enrichir une section trop légère, ajouter des données/chiffres manquants, ou tisser le mot-clé cible littéralement dans une phrase naturelle s'il est absent.
 - **Ne jamais** changer l'URL/slug sans mettre en place une redirection 301 (voir mu-plugin `edi-slug-redirects.php` existant comme modèle).
 
 ## 3. Vérifier AVANT d'éditer le contenu : Elementor ou post_content ?
 
 **Piège connu, documenté dans `CLAUDE.md`.** Certaines pages utilisent Elementor (`_elementor_data` en postmeta), d'autres l'éditeur standard (`post_content`). Éditer le mauvais champ est silencieusement sans effet.
 
+**Faux négatif fréquent (découvert 2026-10-13)** : le champ `meta` retourné par l'API REST (`GET /wp-json/wp/v2/posts/<ID>?_fields=meta`) ne liste QUE les clés enregistrées `show_in_rest: true`. `_elementor_data` n'y apparaît JAMAIS, même quand la page est bien Elementor. **Ne jamais conclure "pas d'Elementor" à partir de l'absence dans ce `meta`.** Pour vérifier fiablement, deux options :
+
 ```bash
-# Depuis ce terminal (pas besoin d'aller sur le serveur pour ce check) :
+# Option A (rapide, depuis ce terminal) : comparer post_content au rendu live
 curl -s "https://exportdirectinfo.com/wp-json/wp/v2/posts/<ID>?context=edit&_fields=content" \
   -H "Authorization: $(grep '^WP_ADMIN_BASIC_AUTH=' .env | cut -d= -f2-)"
 # Compare ensuite avec le HTML rendu en live (curl simple sur l'URL publique).
 # Si le texte de post_content n'apparaît pas dans le rendu public → c'est Elementor.
 ```
+
+```php
+// Option B (fiable à 100%, via SSH/script PHP) :
+$el = get_post_meta($id, '_elementor_data', true);
+echo $el ? "Elementor, len=" . strlen($el) : "post_content standard";
+```
+
+Préférer l'option B si un doute subsiste — un cas réel (post 2260) a eu un `meta` REST ne montrant rien d'Elementor alors que la page l'était bel et bien, menant à une édition `post_content` totalement sans effet avant d'être détectée et corrigée.
 
 ## 4. Éditer en sécurité
 
@@ -56,12 +67,17 @@ Le script doit TOUJOURS :
 2. Faire la modification sur une copie en mémoire, jamais en place directe.
 3. **Vérifier l'intégrité du texte visible** avant d'enregistrer : extraire le texte brut (balises retirées) avant/après, comparer, et **abandonner sans sauvegarder** si le texte diffère au-delà de l'insertion prévue.
 4. Comparer aussi le nombre de liens (`href=`) avant/après si la modification ne doit pas en retirer.
-5. Faire un `delete_post_meta($id, '_elementor_css')` après modification pour forcer la régénération du CSS.
+5. **Vider le cache de rendu, pas seulement le CSS** (cause racine confirmée le 2026-10-13 — sans ça, l'édition reste invisible en live malgré une base correcte) :
+   ```php
+   delete_post_meta($id, '_elementor_css');
+   delete_post_meta($id, '_elementor_element_cache');
+   delete_post_meta($id, '_elementor_page_assets');
+   ```
 6. Si erreur "Permission denied" sur l'écriture du CSS : `docker exec wordpress chown -R www-data:www-data /var/www/html/wp-content/`.
 
 ## 5. Vérifier en live
 
-Toujours confirmer le changement sur la page publique après coup (curl avec cache-busting `?v=$(date +%s)`), pas seulement en base. Pour les pages Elementor volumineuses (>100 Ko), vérifier aussi que le rendu via `\Elementor\Plugin::$instance->documents->get($id)->get_content(true)` correspond à la donnée brute — un widget trop chargé en balises peut faire perdre du contenu silencieusement au rendu (bug déjà rencontré).
+Toujours confirmer le changement sur la page publique après coup avec un `curl` cache-busting (`?v=$(date +%s)`) et chercher un extrait littéral du texte ajouté (pas seulement le compte de liens) — pas seulement en base. Si le marqueur/texte attendu n'apparaît pas malgré l'étape 4.5, ne pas s'acharner : restaurer depuis une révision WordPress propre (`wp_posts` avec `post_type='revision'`, `post_parent=<id>`) et documenter le cas dans `CLAUDE.md` avant d'abandonner.
 
 ## 6. Après l'édition
 
